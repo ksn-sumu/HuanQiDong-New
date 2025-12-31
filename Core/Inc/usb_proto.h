@@ -2,7 +2,7 @@
  * @Author: ksn
  * @Date: 2025-12-28 14:10:02
  * @LastEditors: ksn
- * @LastEditTime: 2025-12-28 15:34:12
+ * @LastEditTime: 2025-12-28 16:35:47
  */
 //
 // Created by 12076 on 2025/12/23.
@@ -17,5 +17,6 @@
 void usb_mbproto_init(void);
 void usb_mbproto_on_rx(const uint8_t *data, uint32_t len);
 void usb_mbproto_poll(void);
+uint8_t usb_mbproto_send_state(void);
 
 #endif // HUANQIDONG_COMMUNICATION_H

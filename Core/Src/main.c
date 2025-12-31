@@ -95,11 +95,13 @@ int main(void)
     MX_ADC1_Init();
     MX_TIM2_Init();
     MX_USB_DEVICE_Init();
+    MX_TIM3_Init();
     /* USER CODE BEGIN 2 */
+    config_load();
     HAL_ADCEx_Calibration_Start(&hadc1);
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, 5);
     usb_mbproto_init();
     HAL_TIM_Base_Start_IT(&htim2);
+    HAL_TIM_Base_Start_IT(&htim3);
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -178,12 +180,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM2)
+    if (htim->Instance == TIM3)
     {
-        uint8_t p[21];
-        pack_state(p);
-        send_frame(0x83, seq, p, 21);
-
+        HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, 5);
+    }
+    else if (htim->Instance == TIM2)
+    {
+        usb_mbproto_send_state();
     }
 }
 
