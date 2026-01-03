@@ -2,7 +2,7 @@
  * @Author: ksn
  * @Date: 2025-12-28 14:09:01
  * @LastEditors: ksn
- * @LastEditTime: 2025-12-28 17:16:43
+ * @LastEditTime: 2026-01-02 18:50:27
  */
 #include "usb_proto.h"
 #include <string.h>
@@ -113,28 +113,23 @@ static void apply_cfg(const uint8_t *in12)
     config.i_max[4] = (float)i4_mA / 1000.0f;
 }
 
-static void pack_state(uint8_t *out11)
+static void pack_state(uint8_t *out12)
 {
-    // u16 量化：vin(mV)、i(mA)
+    // u16 量化：vin(10mV)、i(mA)
     uint16_t vin_mV = sat_u16_from_f(state.vin * 100.0f);
     uint16_t i1_mA = sat_u16_from_f(state.i[1] * 1000.0f);
     uint16_t i2_mA = sat_u16_from_f(state.i[2] * 1000.0f);
     uint16_t i3_mA = sat_u16_from_f(state.i[3] * 1000.0f);
     uint16_t i4_mA = sat_u16_from_f(state.i[4] * 1000.0f);
 
-    wr_u16_le(out11 + 0, vin_mV);
-    wr_u16_le(out11 + 2, i1_mA);
-    wr_u16_le(out11 + 4, i2_mA);
-    wr_u16_le(out11 + 6, i3_mA);
-    wr_u16_le(out11 + 8, i4_mA);
+    wr_u16_le(out12 + 0, vin_mV);
+    wr_u16_le(out12 + 2, i1_mA);
+    wr_u16_le(out12 + 4, i2_mA);
+    wr_u16_le(out12 + 6, i3_mA);
+    wr_u16_le(out12 + 8, i4_mA);
 
-    uint8_t bits = 0;
-    for (int i = 0; i < 5; i++)
-    {
-        if (state.mos_state[i] == MOS_OPEN)
-            bits |= (1u << i);
-    }
-    out11[10] = bits;
+    out12[10] = state.mos_state;
+    out12[11] = state.error;
 }
 
 // ---------------- 命令处理 ----------------
@@ -186,13 +181,20 @@ static void handle_frame(uint8_t cmd, const uint8_t *pl, uint8_t plen)
             reply_status(0x84, 1);
             return;
         }
-        uint8_t bits = pl[0];
-        for (int i = 0; i < 5; i++)
-        {
-            uint8_t on = (bits >> i) & 0x01;
-            ctrl_one_mos((uint8_t)(i), on ? MOS_OPEN : MOS_CLOSE);
-        }
+        ctrl_all_mos(pl[0]);
         reply_status(0x84, 0);
+    }
+    break;
+
+    case 0x05:
+    { // CLEAR_ERROR
+        if (plen != 0)
+        {
+            reply_status(0x85, 1);
+            return;
+        }
+        set0(state.error, error_all);
+        reply_status(0x85, 0);
     }
     break;
 
@@ -209,9 +211,9 @@ uint8_t usb_mbproto_send_state(void)
     if (tx_pending)
         return 0;
 
-    uint8_t p[11];
+    uint8_t p[12];
     pack_state(p);
-    send_frame(0x85, p, 11);
+    send_frame(0x86, p, 12);
     return tx_pending ? 1 : 0;
 }
 

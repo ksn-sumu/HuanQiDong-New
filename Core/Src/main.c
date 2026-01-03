@@ -1,3 +1,9 @@
+/*
+ * @Author: ksn
+ * @Date: 2025-12-18 22:02:14
+ * @LastEditors: ksn
+ * @LastEditTime: 2026-01-03 08:27:46
+ */
 /* USER CODE BEGIN Header */
 /**
  ******************************************************************************
@@ -199,7 +205,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
         state.vin = adc_to_v(adc_buf[0]) * 48.0f;
         for (uint8_t j = 1; j < 5; j++)
         {
-            if (state.mos_state[j] == MOS_OPEN)
+            if (check(state.mos_state, (0x01 << j)))
                 state.i[j] = adc_to_v(adc_buf[j]) / (51 * 0.001);
             else
                 state.i[j] = 0.0f;

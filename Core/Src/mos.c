@@ -2,7 +2,7 @@
  * @Author: ksn
  * @Date: 2025-12-18 22:06:06
  * @LastEditors: ksn
- * @LastEditTime: 2025-12-28 15:36:35
+ * @LastEditTime: 2026-01-03 08:43:12
  */
 //
 // Created by 12076 on 2025/12/20.
@@ -12,52 +12,104 @@
 #include <string.h>
 
 config_t config = {{0, 50}, {3, 3, 3, 3, 3}};
-state_t state = {0, {0, 0, 0, 0, 0}, {MOS_CLOSE, MOS_CLOSE, MOS_CLOSE, MOS_CLOSE, MOS_CLOSE}};
+state_t state = {0, {0, 0, 0, 0, 0}, 0, 0};
 
 void ctrl_one_mos(const uint8_t mos, const GPIO_PinState mos_state)
 {
+    if (check(state.error, error_vin_over | error_vin_under))
+        return;
     switch (mos)
     {
     case 0:
         HAL_GPIO_WritePin(CTRL0_GPIO_Port, CTRL0_Pin, mos_state);
+        if (mos_state)
+            set1(state.mos_state, mos0);
+        else
+            set0(state.mos_state, mos0);
         break;
     case 1:
-        HAL_GPIO_WritePin(CTRL1_GPIO_Port, CTRL1_Pin, mos_state);
+        if (mos_state == MOS_CLOSE)
+        {
+            HAL_GPIO_WritePin(CTRL1_GPIO_Port, CTRL1_Pin, mos_state);
+            set0(state.mos_state, mos1);
+        }
+        else if (!check(state.error, error_i2_over))
+        {
+            HAL_GPIO_WritePin(CTRL1_GPIO_Port, CTRL1_Pin, mos_state);
+            set1(state.mos_state, mos1);
+        }
         break;
     case 2:
-        HAL_GPIO_WritePin(CTRL2_GPIO_Port, CTRL2_Pin, mos_state);
+        if (mos_state == MOS_CLOSE)
+        {
+            HAL_GPIO_WritePin(CTRL2_GPIO_Port, CTRL2_Pin, mos_state);
+            set0(state.mos_state, mos2);
+        }
+        else if (!check(state.error, error_i3_over))
+        {
+            HAL_GPIO_WritePin(CTRL2_GPIO_Port, CTRL2_Pin, mos_state);
+            set1(state.mos_state, mos2);
+        }
         break;
     case 3:
-        HAL_GPIO_WritePin(CTRL3_GPIO_Port, CTRL3_Pin, mos_state);
+        if (mos_state == MOS_CLOSE)
+        {
+            HAL_GPIO_WritePin(CTRL3_GPIO_Port, CTRL3_Pin, mos_state);
+            set0(state.mos_state, mos3);
+        }
+        else if (!check(state.error, error_i4_over))
+        {
+            HAL_GPIO_WritePin(CTRL3_GPIO_Port, CTRL3_Pin, mos_state);
+            set1(state.mos_state, mos3);
+        }
         break;
     case 4:
-        HAL_GPIO_WritePin(CTRL4_GPIO_Port, CTRL4_Pin, mos_state);
+        if (mos_state == MOS_CLOSE)
+        {
+            HAL_GPIO_WritePin(CTRL4_GPIO_Port, CTRL4_Pin, mos_state);
+            set0(state.mos_state, mos4);
+        }
+        else if (!check(state.error, error_i5_over))
+        {
+            HAL_GPIO_WritePin(CTRL4_GPIO_Port, CTRL4_Pin, mos_state);
+            set1(state.mos_state, mos4);
+        }
         break;
     default:
         break;
     }
-    state.mos_state[mos] = mos_state;
 }
 
-void ctrl_all_mos(const GPIO_PinState mos_state)
+void ctrl_all_mos(uint8_t mos_state)
 {
-    HAL_GPIO_WritePin(CTRL0_GPIO_Port, CTRL0_Pin, mos_state);
-    HAL_GPIO_WritePin(CTRL1_GPIO_Port, CTRL1_Pin, mos_state);
-    HAL_GPIO_WritePin(CTRL2_GPIO_Port, CTRL2_Pin, mos_state);
-    HAL_GPIO_WritePin(CTRL3_GPIO_Port, CTRL3_Pin, mos_state);
-    HAL_GPIO_WritePin(CTRL4_GPIO_Port, CTRL4_Pin, mos_state);
-    for (int i = 0; i < 5; i++)
-        state.mos_state[i] = mos_state;
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        if (check(mos_state, (0x01 << i)))
+            ctrl_one_mos(i, MOS_OPEN);
+        else
+            ctrl_one_mos(i, MOS_CLOSE);
+    }
 }
 
 void check_all(void)
 {
-    if (not_in(state.vin, config.vin_threshold))
-        ctrl_all_mos(MOS_CLOSE);
+    if (state.vin > config.vin_threshold[1])
+    {
+        ctrl_all_mos(0x00);
+        set1(state.error, error_vin_over);
+    }
+    else if (state.vin < config.vin_threshold[0])
+    {
+        ctrl_all_mos(0x00);
+        set1(state.error, error_vin_under);
+    }
     for (uint8_t j = 1; j < 5; j++)
     {
         if (state.i[j] > config.i_max[j])
+        {
             ctrl_one_mos(j, MOS_CLOSE);
+            set1(state.error, (0x01 << j));
+        }
     }
 }
 
