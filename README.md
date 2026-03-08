@@ -2,7 +2,7 @@
  * @Author: ksn
  * @Date: 2025-12-28 16:44:16
  * @LastEditors: ksn
- * @LastEditTime: 2025-12-28 17:24:55
+ * @LastEditTime: 2026-01-22 14:32:24
 -->
 # HuanQiDong USB 协议
 
@@ -62,7 +62,14 @@ Byte0   Byte1   Byte2   Byte3..(3+LEN-1)
 ### 3.3 状态推送
 
 #### (5) PUSH_STATE（下位机主动推送）
-- **发送帧**：`CMD=0x85`，`LEN=11`，payload 同 STATE（见 4.2）
+- **发送帧**：`CMD=0x85`，`LEN=12`，payload 为 `STATE`（见 4.2）
+
+### 3.4 清除错误
+
+#### (6) CLEAR_ERR
+- **请求**：`CMD=0x06`，`LEN=0`
+- **应答**：`CMD=0x86`，`LEN=1`，payload 为 `status`（见 5）
+
 ---
 
 ## 4. Payload 结构定义
@@ -85,7 +92,7 @@ offset: 0  1 | 2  3 | 4  5 | 6  7 | 8  9 | 10 11
        vin_min vin_max  i1    i2     i3      i4
 ```
 
-### 4.2 STATE（LEN = 11 bytes）
+### 4.2 STATE（LEN = 12 bytes）
 
 | 字段 | 类型 | 单位 | 说明 |
 |---|---|---|---|
@@ -95,19 +102,26 @@ offset: 0  1 | 2  3 | 4  5 | 6  7 | 8  9 | 10 11
 | i3_mA  | u16 | mA | 通道3电流 |
 | i4_mA  | u16 | mA | 通道4电流 |
 | mos_bits | u8 | - | bit0~bit4 对应 MOS1~MOS5（1=开） |
+| err_bits | u8 | - | 错误状态位 |
+
+错误状态位布局：
+```
+   0    |   1    | 2 3 |   4   |   5   |   6   |   7   |
+ vin欠压  vin过压   空    i2过流  i3过流  i4过流   i5过流
+```
 
 字节布局：
 
 ```
-offset: 0  1 | 2  3 | 4  5 | 6  7 | 8  9 | 10
-       vin    i1     i2     i3     i4    mos_bits
+offset: 0  1 | 2  3 | 4  5 | 6  7 | 8  9 |   10    |    11
+        vin     i1     i2     i3     i4   mos_bits  err_bits
 ```
 
 ---
 
 ## 5. status 码（LEN=1）
 
-所有 `SET_*` 的应答 payload 都是 1 字节 `status`：
+所有 `SET_*` 和 `CLEAR_ERR` 的应答 payload 都是 1 字节 `status`：
 
 - `0x00`：OK
 - `0x01`：长度错误（LEN 不匹配）

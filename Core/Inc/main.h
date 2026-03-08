@@ -66,6 +66,10 @@ void Error_Handler(void);
 #define CRT2_GPIO_Port GPIOA
 #define CRT3_Pin GPIO_PIN_4
 #define CRT3_GPIO_Port GPIOA
+#define LED_Pin GPIO_PIN_5
+#define LED_GPIO_Port GPIOA
+#define VT_Pin GPIO_PIN_6
+#define VT_GPIO_Port GPIOA
 #define CTRL0_Pin GPIO_PIN_0
 #define CTRL0_GPIO_Port GPIOB
 #define CTRL1_Pin GPIO_PIN_1
@@ -79,6 +83,8 @@ void Error_Handler(void);
 #define D1_Pin GPIO_PIN_5
 #define D1_GPIO_Port GPIOB
 #define D1_EXTI_IRQn EXTI9_5_IRQn
+#define BUZZ_Pin GPIO_PIN_9
+#define BUZZ_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

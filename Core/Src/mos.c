@@ -2,7 +2,7 @@
  * @Author: ksn
  * @Date: 2025-12-18 22:06:06
  * @LastEditors: ksn
- * @LastEditTime: 2026-01-03 08:43:12
+ * @LastEditTime: 2026-03-08 18:14:30
  */
 //
 // Created by 12076 on 2025/12/20.
@@ -110,6 +110,16 @@ void check_all(void)
             ctrl_one_mos(j, MOS_CLOSE);
             set1(state.error, (0x01 << j));
         }
+    }
+    if (state.error != 0)
+    {
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(BUZZ_GPIO_Port, BUZZ_Pin, GPIO_PIN_SET);
+    }
+    else
+    {
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(BUZZ_GPIO_Port, BUZZ_Pin, GPIO_PIN_RESET);
     }
 }
 
